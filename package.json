@@ -1,0 +1,29 @@
+{
+  "name": "pete-core",
+  "version": "0.1.0",
+  "description": "Core JavaScript library",
+  "main": "dist/pete-core.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "javascript library",
+    "library",
+    "core",
+    "pete",
+    "typescript"
+  ],
+  "author": {
+      "name": "Benjamin Toll",
+      "email": "benjam72@yahoo.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/btoll/pete-core"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^1.8.10"
+  }
+}
+
