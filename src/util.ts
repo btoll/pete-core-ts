@@ -15,16 +15,22 @@ const reCapFirstLetter: RegExp = /[\s|_|\-|\.](\w)/g;
 const reRange: RegExp = /(\-?\w+)(\.{2,3})(\-?\w+)/;
 const reTrim: RegExp = /^\s+|\s+$/g;
 
+// For internal use only, can be modified via Pete#flush.
+let cache = {};
+let disabled = {};
+let events = {};
+let garbage = {};
+
 const util: Util = {
     /**
-    * @property Pete.util.globalSymbol
+    * @property Pete.core.util.globalSymbol
     * @type String
     * @describe Constant. The global symbol that is used in everything from the creation of unique `<a href="#jsdoc">Pete.Element</a>` ids to class names.
     */
     globalSymbol: 'Pete',
 
     /**
-     * @function Pete.util.addCommas
+     * @function Pete.core.util.addCommas
      * @param {Number/String} format The number to be formatted with commas.
      * @return {String}
      * @describe <p>Accepts a <code>Number</code> or a <code>String</code> and formats it with commas, i.e. <code>3,456,678</code>.</p><p>Note that it's returned as a <code>String</code> because it may contain a comma and <code>parseInt()</code> gives up when it sees a character that doesn't evaluate to a number.</p>
@@ -41,7 +47,7 @@ const util: Util = {
     },
 
     /**
-     * @function Pete.util.camelCase
+     * @function Pete.core.util.camelCase
      * @param {String} str
      * @return {String}
      * @describe <p>Searches the <code>String</code> for an instance of a period (.), underscore (_), whitespace ( ) or hyphen (-) in a word and removes it, capitalizing the first letter of the joined text.</p>
@@ -56,7 +62,7 @@ This old farmLand boyOhBoy
         str.replace(reCamelCase, (a, b, c, d) => b.toLocaleLowerCase() + c + d.toLocaleUpperCase()),
 
     /**
-     * @function Pete.util.capFirstLetter
+     * @function Pete.core.util.capFirstLetter
      * @param {String} str
      * @return {String}
      * @describe <p>Replaces every period (.), underscore (_) and hyphen (-) with a space ( ) and then capitalizes the first letter of each word.</p>
@@ -67,7 +73,7 @@ This old farmLand boyOhBoy
     },
 
     /**
-     * @function Pete.util.copy
+     * @function Pete.core.util.copy
      * @param {Object} varargs
      * @return {Object}
      * @describe Copies all properties of all passed objects to a new object and returns it. It doesn't modify any object passed to it in the method signature. Note this method performs a shallow copy.
@@ -88,7 +94,7 @@ This old farmLand boyOhBoy
     },
 
     /**
-     * @function Pete.util.deepCopy
+     * @function Pete.core.util.deepCopy
      * @param {orig}
      * @return {Object}
      * @describe Makes a deep copy of the object that's passed as its sole argument and returns the copied object. Every copied object and array property of the original object will be separate and distinct from the original object. In other words, after the deep copy occurs, any new expando property added to either object won't be replicated to the other.
@@ -131,7 +137,46 @@ This old farmLand boyOhBoy
     },
 
     /**
-     * @function Pete.util.howMany
+     * @function Pete.core.util.flush
+     * @param {Array/String} action Function argument(s) can be an `Array` or one or more `Strings`
+     * @return {None}
+     * @describe Values are:
+      `cache` - clear the cache of any `Pete.Elements`
+      `disabled` - re-enable any disabled elements
+      `flyweight` - clear the flyweight object
+      `garbage` - clear the garbage cache of any `HTMLElements` that were removed from the DOM
+     */
+    flush: (...actions: string[]): void => {
+        if (!actions.length) {
+            return;
+        }
+
+        for (let i = 0, len = actions.length; i < len; i++) {
+            switch (actions[i]) {
+                case 'cache':
+                    cache = {};
+                    break;
+
+                case 'disabled':
+                    if (!util.isEmpty(disabled)) {
+                        disabled = {};
+                    }
+                    break;
+
+                /*
+                case 'flyweight':
+                    flyweight = {};
+                    break;
+                */
+
+                case 'garbage':
+                    garbage = {};
+            }
+        }
+    },
+
+    /**
+     * @function Pete.core.util.howMany
      * @param {String} haystack The string to search
      * @param {String} needle The part to search for
      * @return {Number}  * @describe <p>Returns how many times <code>needle</code> occurs in the given <code>haystack</code>.</p>
@@ -149,7 +194,7 @@ This old farmLand boyOhBoy
     },
 
     /**
-     * @function Pete.util.increment
+     * @function Pete.core.util.increment
      * @param {None}
      * @return {Number}
      * @describe The closure provides for a secure and reliable counter.
@@ -170,7 +215,7 @@ This old farmLand boyOhBoy
     isArray: (v: any): boolean => Object.prototype.toString.apply(v) === '[object Array]',
 
     /**
-     * @function Pete.util.isEmpty
+     * @function Pete.core.util.isEmpty
      * @param {Mixed} v
      * @return {Boolean}
      * @describe Tests if the variable is empty. `null`, `undefined` and `NaN` are considered to be empty values.
@@ -220,7 +265,7 @@ This old farmLand boyOhBoy
     },
 
     /**
-     * @function Pete.util.makeArray
+     * @function Pete.core.util.makeArray
      * @param {Object} o
      * @param {Number} start (Optional) The index at which to begin slicing
      * @return {Array}
@@ -252,7 +297,7 @@ This old farmLand boyOhBoy
     },
 
     /**
-     * @function Pete.makeId
+     * @function Pete.core.util.makeId
      * @param {None}
      * @return {String}
      * @describe Creates an `Pete.Element` a unique ID if it doesn't already have one.
@@ -260,7 +305,7 @@ This old farmLand boyOhBoy
     makeId: (): string => util.globalSymbol + util.increment(),
 
     /**
-     * @function Pete.util.range
+     * @function Pete.core.util.range
      * @param {String} range
      * @return {Array}
      * @describe <p>Inspired by Ruby's <code>range</code> method. Since this method is based on Ruby's implementation, the syntax and functionality is very similar.</p>
@@ -350,7 +395,7 @@ Pete.range("A..Z").join("");
     },
 
     /**
-     * @function Pete.util.toArray
+     * @function Pete.core.util.toArray
      * @param {Object} o
      * @return {Array}
      * @describe Transforms the passed object into an array. Employs `Object.hasOwnProperty` so as to not push inherited properties onto the array.
@@ -370,7 +415,7 @@ This is to cast an object to an array. If you want to transform a collection int
     },
 
     /**
-     * @function Pete.util.trim
+     * @function Pete.core.util.trim
      * @param {String} str
      * @return {String}
      * @describe Trims whitespace from the beginning and end of a `String`.

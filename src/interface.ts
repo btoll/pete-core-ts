@@ -7,13 +7,10 @@ interface Ajax {
 
 interface Core {
     create: (obj: Object) => Object;
-    compose: (proto: Object, ...args: Object[]) => Object;
     emptyFn: () => void;
-    extend: (proto: Object) => Object;
-    flush: (...actions: string[]) => void;
+    extend: (proto: Object, ...args: Object[]) => Object;
     mixin: (child: Object, parent: Object) => Object;
     mixinIf: (child: Object, parent: Object) => Object;
-    wrap: (proto: Object, methodName: string) => void;
 }
 
 interface HttpOptions {
@@ -68,6 +65,7 @@ interface Util {
     capFirstLetter: (str: string) => string;
     copy: (...args: any[]) => Object;
     deepCopy: (orig: Object[]|Object) => Object;
+    flush: (...actions: string[]) => void;
     howMany: (haystack: string, needle: string) => number;
     increment: () => number;
     isArray: (v: any) => boolean;

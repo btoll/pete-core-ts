@@ -20,7 +20,7 @@ let events: Event = <any>{};
  * @function Observer
  * @param {None}
  * @return {None}
- * @describe Abstract class, useful for custom events. This reference type is composable, i.e., `Pete.compose(Pete.Observer);`
+ * @describe Abstract class, useful for custom events. This reference type is composable, i.e., `Pete.extend(Pete.Observer);`
 */
 const observer: Observer = {
     /**
