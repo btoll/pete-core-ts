@@ -6,7 +6,7 @@
  *
  */
 
-import { Core } from '../lib/interface';
+import { Core, Proto } from '../lib/interface';
 
 const supportsObjectKeys: boolean = !!Object.keys;
 
@@ -26,21 +26,23 @@ const createPolyfill = (proto: Object): Object => {
     return new F();
 };
 
-const extend = (proto: Object, ...args: Object[]): Object => {
-    const obj: any = core.create(proto);
+const createExtendFn = (methodName: string) => {
+    return (proto: Object, ...args: Object[]): Object => {
+        const obj: Proto = core.create(proto);
 
-    if (args.length) {
-        for (let i = 0, len = args.length; i < len; i++) {
-            core.mixin(obj, args[i]);
+        if (args.length) {
+            for (let i = 0, len = args.length; i < len; i++) {
+                core[methodName](obj, args[i]);
+            }
         }
-    }
 
-    // Do any post-processing on the newly-minted object.
-    if (obj.$extend) {
-        obj.$extend.apply(obj, args);
-    }
+        // Do any post-processing on the newly-minted object.
+        if (obj.$extend) {
+            obj.$extend.apply(obj, args);
+        }
 
-    return obj;
+        return obj;
+    };
 };
 
 const mixin = (child: Object, parent: Object): Object => {
@@ -96,7 +98,20 @@ const core: Core = {
      * Note that when mixing in Object.keys is used. This means that only own, enumerable keys are
      * copied over into the new object.
      */
-    extend: extend,
+    extend: createExtendFn('extend'),
+
+    /**
+     * @function Pete.core.extendIf
+     * @param {Object} The base prototype.
+     * @param {...Object[]} Optional. Any number of additional objects to be mixed into the new object.
+     * @return {Object} The new, extended object.
+     *
+     * Note that when mixing in Object.keys is used. This means that only own, enumerable keys are
+     * copied over into the new object.
+     *
+     * In addition, only fields that don't exist in the destination object are copied over.
+     */
+    extendIf: createExtendFn('extendIf'),
 
     /**
      * @function Pete.mixin

@@ -8,6 +8,7 @@ interface Core {
     create: (obj: Object) => Object;
     emptyFn: () => void;
     extend: (proto: Object, ...args: Object[]) => Object;
+    extendIf: (proto: Object, ...args: Object[]) => Object;
     mixin: (child: Object, parent: Object) => Object;
     mixinIf: (child: Object, parent: Object) => Object;
 }
@@ -36,6 +37,10 @@ interface Observer {
     unsubscribe: (type: string, fn: Function) => void;
 }
 
+interface Proto {
+    $extend?: (...args: any[]) => Object;
+}
+
 interface Util {
     globalSymbol: string;
     addCommas: (format: number|string) => string;
@@ -60,6 +65,7 @@ export {
     Core,
     HttpOptions,
     Observer,
+    Proto,
     Util
 };
 
