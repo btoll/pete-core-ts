@@ -6,9 +6,9 @@
  *
  */
 
-import Pete from './Pete';
+import core from './core';
 import util from './util';
-import { Observer } from './interface';
+import { Observer } from '../lib/interface';
 
 //interface Event {
 //    [propName: string]: Function|Function[];
@@ -24,7 +24,7 @@ let events: Event = <any>{};
 */
 const observer: Observer = {
     /**
-     * @function Pete.Observer.subscriberEvents
+     * @function Pete.observer.subscriberEvents
      * @param {Array/String} v
      * @return {None}
      * @describe Define the custom events that the type will expose. Pass either an array where the
@@ -46,7 +46,7 @@ const observer: Observer = {
     },
 
     /**
-     * @function Pete.Observer.fire
+     * @function Pete.observer.fire
      * @param {String} type
      * @param {Object} options Optional
      * @return {Boolean}
@@ -71,7 +71,7 @@ Note that custom events bubble, so returning `false` in the callback will preven
             };
 
             if (options && !util.isEmpty(options)) {
-                Pete.mixin(customEvent, options);
+                core.mixin(customEvent, options);
             }
 
             events[type].forEach((fn: Function): void =>
@@ -87,7 +87,7 @@ Note that custom events bubble, so returning `false` in the callback will preven
     },
 
     /**
-     * @function Pete.Observer.isObserved
+     * @function Pete.observer.isObserved
      * @param {String} type
      * @return {Boolean}
      * @describe Returns `true` if the event has one or more subscribers (`false` otherwise). Note it doesn't query for a specific handler.
@@ -95,7 +95,7 @@ Note that custom events bubble, so returning `false` in the callback will preven
     isObserved: (type: string): boolean => !!events[type],
 
     /**
-     * @function Pete.Observer.purgeSubscribers
+     * @function Pete.observer.purgeSubscribers
      * @param {None}
      * @return {None}
      * @describe Removes all of an object's event handlers.
@@ -103,7 +103,7 @@ Note that custom events bubble, so returning `false` in the callback will preven
     purgeSubscribers: () => events = <Event>{},
 
     /**
-     * @function Pete.Observer.subscribe
+     * @function Pete.observer.subscribe
      * @param {String} type Event to listen for
      * @param {Function} fn Callback
      * @return {None}
@@ -124,7 +124,7 @@ Note that custom events bubble, so returning `false` in the callback will preven
     },
 
     /**
-     * @function Pete.Observer.unsubscribe
+     * @function Pete.observer.unsubscribe
      * @param {String} type
      * @param {Function} fn
      * @return {None}

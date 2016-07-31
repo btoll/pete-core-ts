@@ -6,9 +6,9 @@
  *
  */
 
-import { Core } from './interface';
+import { Core } from '../lib/interface';
 
-const supportsObjectKeys = !!Object.keys;
+const supportsObjectKeys: boolean = !!Object.keys;
 
 const create = (() => {
     const createFn: Function = Object.create ?

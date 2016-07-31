@@ -1,5 +1,4 @@
 interface Ajax {
-    get: (url: string) => string;
     getRequests: () => Object;
     load: (opts: HttpOptions) => void;
     onComplete: (response: string, request: HttpOptions, success: boolean, xhr: XMLHttpRequest) => void;
@@ -17,7 +16,7 @@ interface HttpOptions {
     async: boolean;
     data: string;
     headers: string;
-    id?: number;
+    id: number;
     postvars: string;
     timeout: number;
     type: string;
@@ -35,27 +34,6 @@ interface Observer {
     purgeSubscribers: () => void;
     subscribe: (type: string, fn: Function) => void;
     unsubscribe: (type: string, fn: Function) => void;
-}
-
-interface RuleBag {
-    email: RuleDef;
-    phone: RuleDef;
-    ssn: RuleDef;
-    zip: RuleDef;
-    [propName: string]: RuleDef;
-}
-
-interface RuleDef {
-    re: string;
-    mask?: string;
-    message: string;
-}
-
-interface Rules {
-    getRule: (name: string) => RuleDef;
-    setRule: (name: string, rule: RuleDef) => RuleBag;
-    removeRule: (name: string) => RuleBag;
-    rules: () => RuleBag;
 }
 
 interface Util {
@@ -82,9 +60,6 @@ export {
     Core,
     HttpOptions,
     Observer,
-    RuleDef,
-    RuleBag,
-    Rules,
     Util
 };
 

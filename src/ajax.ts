@@ -6,86 +6,67 @@
  *
  */
 
-import Pete from './Pete';
+import core from './core';
 import util from './util';
-//import Observer from './observer';
-import { Ajax, HttpOptions } from './interface';
+import { Ajax, HttpOptions } from '../lib/interface';
+
+const emptyFn = core.emptyFn;
+const requests = <any>{};
 
 /**
- * @property defaults
+ * @function getDefaults
  * @type Object
  * @describe Private. Contains the default configuration options which can be changed
  * within the object literal passed as the parameter to `Pete.ajax.load`.
  */
-const defaults: HttpOptions = {
-    type: 'get',
-    // The data type that'll be returned from the server.
-    data: 'html',
-    url: '',
-    postvars: '',
-    // The headers that will be returned (for HEAD requests only).
-    headers: '',
-    timeout: 60000,
-    complete: Pete.emptyFn,
-    error: Pete.emptyFn,
-    success: Pete.emptyFn,
-    abort: Pete.emptyFn,
-    async: true
+const getDefaults = (): HttpOptions => {
+    return {
+        async: true,
+        data: '',
+        // The headers that will be returned (for HEAD requests only).
+        headers: '',
+        id: -1,
+        postvars: '',
+        timeout: 30000,
+        type: 'GET',
+        url: '',
+        abort: emptyFn,
+        complete: emptyFn,
+        error: emptyFn,
+        success: emptyFn
+    };
 };
 
-let getXHR = (): XMLHttpRequest => new XMLHttpRequest();
-
-// Determine the success of the HTTP response.
-const wasSuccessful: Function = (r: XMLHttpRequest): boolean => {
-    try {
-        // If no server status is provided and we're actually requesting a local file then it was successful.
-        return !r.status && location.protocol === 'file:' ||
-
-            // Any status in the 200 range is good.
-            (r.status >= 200 && r.status < 300) ||
-
-            // Successful if the document has not been modified.
-            r.status === 304;// ||
-
-//            // Safari returns an empty status if the file has not been modified.
-//            Pete.isSafari && typeof r.status === 'undefined';
-
-    } catch (e) {
-        throw e;
-    }
-
-    // If checking the status failed then assume that the request failed.  return false;
-};
-
-// Extract the correct data from the HTTP response.
-const httpData: Function = (r: XMLHttpRequest, options: HttpOptions): string => {
-    const ct = r.getResponseHeader('content-type');
-    let data;
-
+const getHttpData = (response: XMLHttpRequest, options: HttpOptions): string => {
+    // Extract the correct data from the HTTP response.
+    //
     // If a HEAD request was made, determine which header name/value pair to return
     // (or all of them) and exit function.
-    if (options.type === 'HEAD') {
-        return !options.headers ? r.getAllResponseHeaders() : r.getResponseHeader(options.headers);
+    if (options.type.toUpperCase() === 'HEAD') {
+        return !options.headers ? response.getAllResponseHeaders() : response.getResponseHeader(options.headers);
     }
 
     // If the specified type is 'script', execute the returned text response as if it were javascript.
-    if (options.data === 'json') {
-        return JSON.parse(r.responseText);
+    if (options.data.toLowerCase() === 'json') {
+        return JSON.parse(response.responseText);
     }
 
-    // Determine if some form of xml was returned from the server.
-    data = ct && ct.indexOf('xml') > -1;
-
-    // Get the xml document object if xml was returned from the server, otherwise return the text contents.
-    data = options.data === 'xml' || data ? r.responseXML : r.responseText;
-
-    return data;
+    return isXml(response, options) ?
+        response.responseXML :
+        response.responseText;
 };
 
+const getOptions = (options: HttpOptions): HttpOptions =>
+    <HttpOptions>core.mixin(getDefaults(), options);
+
+const getXhr = (): XMLHttpRequest => new XMLHttpRequest();
+
+const isXml = (response: XMLHttpRequest, options: HttpOptions): boolean =>
+    options.data.toLowerCase() === 'xml' || response.getResponseHeader('Content-Type').indexOf('xml') > -1;
+
 const sendRequest = function (xhr: XMLHttpRequest, options: HttpOptions): void {
-    // We're going to wait for a request for x seconds before giving up.
-    const timeoutLength = options.timeout;
     const requestId = util.increment();
+    const type = options.type.toUpperCase();
 
     requests[requestId] = xhr;
     options.id = requestId;
@@ -97,13 +78,11 @@ const sendRequest = function (xhr: XMLHttpRequest, options: HttpOptions): void {
             xhr.abort();
             options.abort();
         }
-    }, timeoutLength);
+    }, options.timeout);
 
-    xhr.onreadystatechange = () => {
-        let result;
-
+    xhr.onreadystatechange = ():void => {
         if (xhr.readyState === 4) {
-            result = httpData(xhr, options);
+            let result = getHttpData(xhr, options);
             ajax.onComplete(result, options, wasSuccessful(xhr), xhr);
 
             // Clean up after ourselves to avoid memory leaks.
@@ -111,14 +90,14 @@ const sendRequest = function (xhr: XMLHttpRequest, options: HttpOptions): void {
         }
     };
 
-    if (options.type === 'HEAD') {
-        xhr.open(options.type, options.url);
+    if (type === 'HEAD') {
+        xhr.open(type, options.url);
     } else {
-        xhr.open(options.type, options.url, options.async);
+        xhr.open(type, options.url, options.async);
     }
 
     // Establish the connection to the server.
-    if (options.type === 'post') {
+    if (type === 'POST') {
         xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
         xhr.send(options.postvars);
     } else {
@@ -127,81 +106,55 @@ const sendRequest = function (xhr: XMLHttpRequest, options: HttpOptions): void {
 };
 
 const onComplete = (response: string, request: HttpOptions, success: boolean, xhr: XMLHttpRequest): void => {
-    if (success) {
-        request.success(response, request, success, xhr);
-    } else {
-        request.error(response, request, success, xhr);
-    }
+    const methodName = success ? 'success' : 'error';
 
+    request[methodName](response, request, success, xhr);
     request.complete();
+
     delete requests[request.id];
 };
 
-const requests = <any>{};
+const wasSuccessful = (xhr: XMLHttpRequest): boolean =>
+    // If no server status is provided and we're actually requesting a local file then it was successful.
+    !xhr.status && location.protocol === 'file:' ||
 
-//export default Pete.compose(Observer, ((): Object => {
+        // Any status in the 200 range is good.
+        (xhr.status >= 200 && xhr.status < 300) ||
+
+        // Successful if the document has not been modified.
+        xhr.status === 304;// ||
+
+//            // Safari returns an empty status if the file has not been modified.
+//            Pete.isSafari && typeof r.status === 'undefined';
+
 const ajax: Ajax = {
-    /**
-     * @function Pete.ajax.get
-     * @param {String} url The destination from where to fetch the data.
-     * @return {String/XML/JSON}
-     * @describe Always performs a GET request and is synchronous. `Pete.Element.ajax` is an alias
-     * of this method and should be used when dealing with an `Pete.Element` or `Pete.Composite` object.
-     * @example
-        const link = Pete.Element.get('theLink');
-
-        const response = oLink.ajax('http://localhost-jslite/sandbox/assert.html');
-        or
-        const response = Pete.ajax.get('http://localhost-jslite/sandbox/assert.html');
-
-        link.tooltip(sResponse);
-        or
-        link.tooltip(Pete.ajax.get('http://localhost-jslite/sandbox/assert.html'));
-     */
-    get: (url: string): string => {
-        // TODO: Check this (changed .compose to .create).
-        const options: HttpOptions = <HttpOptions>Pete.mixin(Pete.create(defaults), {
-            url: url,
-            async: false
-        });
-
-        const xhr: XMLHttpRequest = getXHR();
-
-        sendRequest(xhr, options);
-
-        return xhr.responseText;
-    },
-
     getRequests: (): Object => requests,
 
     /**
      * @function Pete.ajax.load
-     * @param {Object} opts An object literal.
-     * @return {String/XML/JSON}
+     * @param {Object} options
+     * @return {String/XML/JSON} Optional. Will only return if configured as synchronous.
      * @describe Used for general-purpose Ajax request. Define callbacks and other customizable
-     * features within `opts.
+     * features within `options`.
      * @example
         Pete.ajax.load({
-            url: url,
-            data: 'html',
-            type: 'POST',
-            success: function (sResponse) {
-                Pete.getDom('myDiv').innerHTML = sResponse.HTMLify();
+            url: 'http://www.benjamintoll.com/',
+            type: 'GET',
+            success: resp => {
+                // ...
             }
         });
      */
-    load: (opts: HttpOptions): void => {
-        // Make a clone of defaults so each closure gets its own copy.
-        // TODO: Check this (changed .compose to .create).
-        const options: HttpOptions = <HttpOptions>Pete.mixin(Pete.create(defaults), opts);
-        const xhr: XMLHttpRequest = getXHR();
+    load: (options: HttpOptions): void|string => {
+        const opts: HttpOptions = getOptions(options);
+        const xhr: XMLHttpRequest = getXhr();
 
         // TODO: Make all private methods public?
         sendRequest(xhr, options);
 
         if (!opts.async) {
             if (wasSuccessful(xhr)) {
-                return httpData(xhr, options);
+                return getHttpData(xhr, options);
             }
         }
     },
@@ -209,4 +162,6 @@ const ajax: Ajax = {
     // This has to be exposed in case a prototype defines its own API.
     onComplete: onComplete
 };
+
+export default ajax;
 

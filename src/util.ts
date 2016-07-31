@@ -6,7 +6,7 @@
  *
  */
 
-import { Util } from './interface';
+import { Util } from '../lib/interface';
 
 const reAddCommas: RegExp = /(\d+)(\d{3})/;
 const reCamelCase: RegExp = /([a-zA-Z0-9])([a-zA-Z0-9]*)[_|\-|\.|\s]([a-zA-Z0-9])/g;
