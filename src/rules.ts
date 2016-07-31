@@ -6,7 +6,33 @@
  *
  */
 
-import { Rule, RuleBag } from './interface';
+import { RuleDef, RuleBag, Rules } from './interface';
+
+let defaultRules: RuleBag = {
+    email: <RuleDef>{
+        re: '^[_a-z0-9-]+(\\.[_a-z0-9-]+)*@[a-z0-9-]+(\\.[a-z0-9-]+)*(\\.[a-z]{2,3})$',
+        // re: "^[\w-]+(\\.[\w-]+)*@[a-z0-9-]+(\\.[\w-]+)*(\\.[a-z]{2,3})$",
+        message: 'Must be a valid email address.'
+    },
+
+    phone: <RuleDef>{
+        re: '^1?\\(?(\\d{3})\\)?\\s?(\\d{3})-?(\\d{4})$',
+        mask: '({1}) {2}-{3}',
+        message: 'Can only contain numbers, parenthesis, spaces and a dash.'
+    },
+
+    ssn: <RuleDef>{
+        re: '^(\\d{3})(?:[-\\s]?)(\\d{2})(?:[-\\s]?)(\\d{4})$',
+        mask: '{1}-{2}-{3}',
+        message: 'Can only contain numbers separated by a dash or a space.'
+    },
+
+    zip: <RuleDef>{
+        re: '^([0-9]{5})(?:[-\\s]?)([0-9]{4})?$',
+        mask: '{1}-{2}',
+        message: 'Can only contain numbers and a dash.'
+    }
+};
 
 /**
  * @function Rules
@@ -23,47 +49,21 @@ For instance, to set an "alpha" rule, the form element should look like the foll
 
 <input type="text" id="firstName" name="firstName" class="required-alpha" />
  */
-export default (() => {
-    let rules: RuleBag = {
-        email: {
-            re: '^[_a-z0-9-]+(\\.[_a-z0-9-]+)*@[a-z0-9-]+(\\.[a-z0-9-]+)*(\\.[a-z]{2,3})$',
-            // re: "^[\w-]+(\\.[\w-]+)*@[a-z0-9-]+(\\.[\w-]+)*(\\.[a-z]{2,3})$",
-            message: 'Must be a valid email address.'
-        },
+const rules: Rules = {
+    getRule: (name: string): RuleDef => defaultRules[name],
 
-        phone: {
-            re: '^1?\\(?(\\d{3})\\)?\\s?(\\d{3})-?(\\d{4})$',
-            mask: '({1}) {2}-{3}',
-            message: 'Can only contain numbers, parenthesis, spaces and a dash.'
-        },
+    setRule: (name: string, rule: RuleDef): RuleBag => {
+        defaultRules[name] = rule;
+        return defaultRules;
+    },
 
-        ssn: {
-            re: '^(\\d{3})(?:[-\\s]?)(\\d{2})(?:[-\\s]?)(\\d{4})$',
-            mask: '{1}-{2}-{3}',
-            message: 'Can only contain numbers separated by a dash or a space.'
-        },
+    removeRule: (name: string): RuleBag => {
+        delete defaultRules[name];
+        return defaultRules;
+    },
 
-        zip: {
-            re: '^([0-9]{5})(?:[-\\s]?)([0-9]{4})?$',
-            mask: '{1}-{2}',
-            message: 'Can only contain numbers and a dash.'
-        }
-    };
+    rules: (): RuleBag => defaultRules
+};
 
-    return {
-        getRule: (name: string): Rule => rules[name],
-
-        setRule: (name: string, rule: Rule): RuleBag => {
-            rules[name] = rule;
-            return rules;
-        },
-
-        removeRule: (name: string): RuleBag => {
-            delete rules[name];
-            return rules;
-        },
-
-        rules: (): RuleBag => rules
-    };
-})();
+export default rules;
 

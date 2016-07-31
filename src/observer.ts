@@ -7,10 +7,14 @@
  */
 
 import Pete from './Pete';
+import util from './util';
+import { Observer } from './interface';
 
-interface Event {
-    [propName: string]: Function;
-}
+//interface Event {
+//    [propName: string]: Function|Function[];
+//}
+
+let events: Event = <any>{};
 
 /**
  * @function Observer
@@ -18,41 +22,26 @@ interface Event {
  * @return {None}
  * @describe Abstract class, useful for custom events. This reference type is composable, i.e., `Pete.compose(Pete.Observer);`
 */
-export default {
+const observer: Observer = {
     /**
      * @function Pete.Observer.subscriberEvents
      * @param {Array/String} v
      * @return {None}
-     * @describe Define the custom events that the type will expose. Pass either an array where the property of custom events or a comma-delimited list of strings in the constructor. If the object then subscribes to one of the exposed events, the function will be mapped to the event name in `this.events`.
-     * @example
-const Person = function (name) {
-  this.name = name;
-  this.subscriberEvents("say", "walk");
-};
-
---or--
-
-var Person = function (name) {
-  this.name = name;
-  this.subscriberEvents(["say", "walk"]);
-};
+     * @describe Define the custom events that the type will expose. Pass either an array where the
+     * property of custom events or a comma-delimited list of strings in the constructor. If the
+     * object then subscribes to one of the exposed events, the function will be mapped to the event
+     * name in `events`.
      */
-    subscriberEvents: function (v: string|string[]) {
-        const me = this;
-
-        if (!me.events) {
-            me.events = <Event>{};
-        }
-
+    subscriberEvents: function (v: string|string[]): void {
         if (typeof v === 'string') {
-            // TODO: Spread operator.
+            // TODO: Rest parameter.
             for (let i = 0, args = arguments; args[i]; i++) {
-                if (!this.events[args[i]]) {
-                    this.events[args[i]] = [];
+                if (!events[args[i]]) {
+                    events[args[i]] = [];
                 }
             }
-        } else if (Pete.isArray(v)) {
-            v.forEach((a: string): string[] => me.events[a] = []);
+        } else if (util.isArray(v)) {
+            v.forEach((a: string): string[] => events[a] = []);
         }
     },
 
@@ -67,9 +56,7 @@ var Person = function (name) {
 The second argument is an optional `options` object that contains other data to pass to the subscribing event listener(s).
 Note that custom events bubble, so returning `false` in the callback will prevent this behavior.
      */
-    fire: function (type: string, options: Object): boolean {
-        const me = this;
-        const events: Event[] = me.events;
+    fire: (type: string, options: Object): boolean => {
         let bubble = true;
         let customEvent;
 
@@ -79,18 +66,18 @@ Note that custom events bubble, so returning `false` in the callback will preven
 
         if (events[type]) {
             customEvent = {
-                target: me,
+                target: observer,
                 type: type
             };
 
-            if (options && !Pete.isEmpty(options)) {
+            if (options && !util.isEmpty(options)) {
                 Pete.mixin(customEvent, options);
             }
 
             events[type].forEach((fn: Function): void =>
                 // Will return false if bubbling is canceled.
                 // NOTE a callback returning undefined will not prevent the event from bubbling.
-                bubble = fn.call(me, customEvent)
+                bubble = fn.call(observer, customEvent)
             );
         } else {
             bubble = false;
@@ -105,9 +92,7 @@ Note that custom events bubble, so returning `false` in the callback will preven
      * @return {Boolean}
      * @describe Returns `true` if the event has one or more subscribers (`false` otherwise). Note it doesn't query for a specific handler.
      */
-    isObserved: function (type: string): boolean {
-        return !!this.events[type];
-    },
+    isObserved: (type: string): boolean => !!events[type],
 
     /**
      * @function Pete.Observer.purgeSubscribers
@@ -115,9 +100,7 @@ Note that custom events bubble, so returning `false` in the callback will preven
      * @return {None}
      * @describe Removes all of an object's event handlers.
      */
-    purgeSubscribers: function () {
-        this.events = <Event>{};
-    },
+    purgeSubscribers: () => events = <Event>{},
 
     /**
      * @function Pete.Observer.subscribe
@@ -126,9 +109,7 @@ Note that custom events bubble, so returning `false` in the callback will preven
      * @return {None}
      * @describe Listen to a pre-defined event by passing the name of the event to and the callback to be invoked when that event occurs.
      */
-    subscribe: function (type: string, fn: Function) {
-        const events: Event[] = this.events;
-
+    subscribe: (type: string, fn: Function): void => {
         if (!events || !events[type]) {
             // If there are no events then we know that the subscriberEvents api wasn't used, so exit.
             // Also, caan't subscribe to an event that wasn't established within the constructor!
@@ -149,12 +130,12 @@ Note that custom events bubble, so returning `false` in the callback will preven
      * @return {None}
      * @describe Remove the event listener that was previously subscribed.
      */
-    unsubscribe: function (type: string, fn: Function): void {
-        const events: Event[] = this.events;
-
+    unsubscribe: (type: string, fn: Function): void => {
         if (events && events[type]) {
             events[type].remove(fn);
         }
     }
 };
+
+export default observer;
 
